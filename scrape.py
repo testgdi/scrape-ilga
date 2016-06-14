@@ -102,7 +102,7 @@ if __name__ == "__main__":
     for b in bl:
         timelines[b.str_bill_num()] = get_timeline( b)
 
-    ## unfortunately get_timeline does not pars all bill timelines
+    ## unfortunately get_timeline does not parse all bill timelines
     ## correctly
 
 
