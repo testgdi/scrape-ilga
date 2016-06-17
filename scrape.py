@@ -4,28 +4,19 @@ import re
 from dateutil.parser import parse
 
 def is_date(string):
+    """
+    check if a string is a date, i.e. "1/12/2015"
+    """
     try:
         parse(string)
         return True
     except ValueError:
         return False
 
-                            
-def get_house_members():
-    member_list_url = "http://www.ilga.gov/house"
-    f = urllib2.urlopen( member_list_url)
-    s = BeautifulSoup(f, 'html.parser')
-    member_name_num_dict={}
-    member_num_name_dict={}
-
-    for x in s.find_all(href=re.compile("/house/Rep")):
-        num=str(x).split("MemberID=")[1][:4]
-        member_name_num_dict[x.string] = num
-        member_num_name_dict[num] = x.string
-
-    return member_name_num_dict, member_num_name_dict
-
 class BillListItem:
+    """
+    Hold some properties of a bill
+    """
     def __init__(self,td_list):
         self.bill_num = td_list[0]
         self.bill_sponsor=td_list[1]
@@ -49,7 +40,27 @@ class BillListItem:
     def bill_url(self):
         return self.bill_num.find('a').get('href')
 
+def get_house_members():
+    """
+    get all the hous members, and get their names and ids
+    """
+    member_list_url = "http://www.ilga.gov/house"
+    f = urllib2.urlopen( member_list_url)
+    s = BeautifulSoup(f, 'html.parser')
+    member_name_num_dict={}
+    member_num_name_dict={}
+
+    for x in s.find_all(href=re.compile("/house/Rep")):
+        num=str(x).split("MemberID=")[1][:4]
+        member_name_num_dict[x.string] = num
+        member_num_name_dict[num] = x.string
+
+    return member_name_num_dict, member_num_name_dict
+
 def get_multi_timeline(soup):
+    """
+    given a soup for a bills webpage, extract the timeline
+    """
     dates = soup.find_all("td", align="right",
                        valign="top", width="13%")
     chamber = soup.find_all("td", align="center",
@@ -64,12 +75,18 @@ def get_multi_timeline(soup):
     return table
 
 def get_timeline( bill):
+    """
+    given a bill object, extract the timeline
+    """
     url = bill.bill_url()
     f = urllib2.urlopen( 'http://www.ilga.gov' + url +"#actions")
     s = BeautifulSoup(f, 'html.parser')
     return get_multi_timeline(s)
 
 def get_member_bills( id='2237'):
+    """
+    given a member id, get all the bills they sponsor or co-sponsor
+    """
     url="http://www.ilga.gov/house/RepBills.asp?MemberID=" + id
     f = urllib2.urlopen( url)
     s = BeautifulSoup(f, 'html.parser')
@@ -105,9 +122,3 @@ if __name__ == "__main__":
             print x
         for x in  timelines[tl][-3:]:
             print x
-
-    
-
-    
-    
-
