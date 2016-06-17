@@ -57,10 +57,13 @@ def get_house_members():
 
     return member_name_num_dict, member_num_name_dict
 
-def get_multi_timeline(soup):
+def get_multi_timeline(bill):
     """
-    given a soup for a bills webpage, extract the timeline
+    given a bill object, extract the timeline
     """
+    url = bill.bill_url()
+    f = urllib2.urlopen( 'http://www.ilga.gov' + url +"#actions")
+    soup = BeautifulSoup(f, 'html.parser')
     dates = soup.find_all("td", align="right",
                        valign="top", width="13%")
     chamber = soup.find_all("td", align="center",
@@ -73,15 +76,6 @@ def get_multi_timeline(soup):
 
     table = zip( dates, chamber, action)
     return table
-
-def get_timeline( bill):
-    """
-    given a bill object, extract the timeline
-    """
-    url = bill.bill_url()
-    f = urllib2.urlopen( 'http://www.ilga.gov' + url +"#actions")
-    s = BeautifulSoup(f, 'html.parser')
-    return get_multi_timeline(s)
 
 def get_member_bills( id='2237'):
     """
