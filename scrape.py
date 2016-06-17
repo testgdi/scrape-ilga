@@ -1,7 +1,16 @@
 import urllib2
 from bs4 import BeautifulSoup
 import re
+from dateutil.parser import parse
 
+def is_date(string):
+    try:
+        parse(string)
+        return True
+    except ValueError:
+        return False
+
+                            
 def get_house_members():
     member_list_url = "http://www.ilga.gov/house"
     f = urllib2.urlopen( member_list_url)
@@ -15,10 +24,6 @@ def get_house_members():
         member_num_name_dict[num] = x.string
 
     return member_name_num_dict, member_num_name_dict
-
-name2num, num2name = get_house_members()
-
-print name2num["Kathleen Willis"]
 
 class BillListItem:
     def __init__(self,td_list):
@@ -43,13 +48,26 @@ class BillListItem:
 
     def bill_url(self):
         return self.bill_num.find('a').get('href')
-    
+
+def get_multi_timeline(soup):
+    dates = soup.find_all("td", align="right",
+                       valign="top", width="13%")
+    chamber = soup.find_all("td", align="center",
+                       valign="top", width="12%")
+    action = soup.find_all("td", align="left",
+                       valign="top", width="75%")
+    dates = [x.get_text().encode('ascii',errors='ignore') for x in dates]
+    chamber = [x.get_text().encode('ascii',errors='ignore') for x in chamber]
+    action = [x.get_text().encode('ascii',errors='ignore') for x in action]
+
+    table = zip( dates, chamber, action)
+    return table
 
 def get_timeline( bill):
     url = bill.bill_url()
-    f = urllib2.urlopen( 'http://www.ilga.gov' + url)
+    f = urllib2.urlopen( 'http://www.ilga.gov' + url +"#actions")
     s = BeautifulSoup(f, 'html.parser')
-    return get_timeline_table(s)
+    return get_multi_timeline(s)
 
 def get_member_bills( id='2237'):
     url="http://www.ilga.gov/house/RepBills.asp?MemberID=" + id
@@ -68,47 +86,20 @@ def get_member_bills( id='2237'):
 
     return bill_list
 
-
-def get_filed_fields(soup):
-    s_all_td = soup.find_all("td")
-    filed_with_clerk = s_all_td[23]
-    date, chamber = [x.string for x in filed_with_clerk.find_all('table')[3].\
-                     find_all('td')[-3:-1]]
-    filer = filed_with_clerk.find_all('table')[3].find_all('td')[-1].\
-            find("a").get_text()
-    date = date.encode('ascii',errors='ignore')
-    return date, chamber, filer
-
-
-def get_timeline_table(soup):
-    table = []
-    s_all_td = soup.find_all('td')
-    for i in range(37,len(s_all_td)-6):
-        st = s_all_td[i].get_text().encode('ascii',errors='ignore')
-        table.append( st)
-
-    dates = [ table[3*i] for i in range( len(table)/3)]
-    chamber = [ table[3*i+1] for i in range( len(table)/3)]
-    action = [ table[3*i+2] for i in range( len(table)/3)]
-    return zip(dates, chamber, action)
-
-
 if __name__ == "__main__":
 
+    name2num, num2name = get_house_members()
+
     willis_num = name2num["Kathleen Willis"]
+    print willis_num
+
     bl = get_member_bills( willis_num)
 
     timelines = {}
     for b in bl:
         timelines[b.str_bill_num()] = get_timeline( b)
 
-    ## unfortunately get_timeline does not parse all bill timelines
-    ## correctly
-
-
-    
-
-    for tl in ['HB696', 'HB972', 'HB6252']:
+    for tl in timelines:
         print tl
         for x in timelines[tl][:3]:
             print x
